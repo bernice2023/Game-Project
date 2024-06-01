@@ -1,0 +1,462 @@
+
+#Author: Bernice Abanda
+#Friday, April 26, 2024
+#Final Project! :)
+
+
+#RULES FOR MY GAME:
+#To play, you control the green ring with the arrow keys, and you can also jump with the space bar!
+#try to get all the balls into the center 'hole' without hitting the ghost and avoiding the trees!
+#You can bump/collide with the balls to get them into the hole, or you can jump on top of them to seamlessly corral them into the hole. Up to you!
+#Extra challenge: Try to get all the balls into the hole under the displayed time limit!
+
+#NOTE: ****If you get stuck ANYWHERE, press “r’’ to RESET the ring! :) ****
+
+
+
+#Set-Up:
+
+scene.bind('keydown', keydown_fun)     # Function for key presses
+scene.bind('click', click_fun)         # Function for mouse clicks
+scene.background = vec(0,0,.0008)    # Light gray (0.8 out of 1.0)
+scene.width = 680                      # Make the 3D canvas larger
+scene.height = 480
+
+
+
+
+
+#Object Creation 
+
+def make_ghost(starting_position, starting_vel = vec(0, 0, 0)):
+    """The lines below make a new "frame", which is a container with a
+       local coordinate system.
+       The arguments to make_alien allow for any initial starting position
+       and initial starting velocity, with a default starting velocity
+       of vec(0, 0, 0).
+
+       Compounds can have any number of components.  Here are the
+       alien's components:
+    """
+    ghost_body = sphere(size = 1*vec(1, 1, 1),
+                        pos = vec(0, 1, 0),
+                        color = color.white
+                        )
+    ghost_torso = cylinder(pos = vec(0,0,0), color = color.white, axis = vec(0,1,0), size = vec(1,1,1))
+    ghost_eye1 = sphere(size = 0.4*vec(1, 1, 1),
+                        pos = .42*vec(.7, 2.5, .2),
+                        color = color.blue
+                        )
+    ghost_eye2 = sphere(size = 0.4*vec(1, 1, 1),
+                        pos = .42*vec(.2, 2.5, .7),
+                        color = color.blue
+                        )
+
+    ghost_objects = [ghost_body, ghost_eye1, ghost_eye2, ghost_torso]
+    #Compound Object Creation
+    com_ghost = compound(ghost_objects,
+                         pos = starting_position
+                         )
+    com_ghost.vel = starting_vel    # Set the initial velocity
+    return com_ghost
+
+
+#Function to create a Tree object
+def makeTree(startingpos):
+    """Makes a tree object -- balls and ring bounce off trees
+        Argument: starting pos, a posiiton vector to place the Tree somewhere on the game board
+    """
+    
+    trunk = cylinder( size=vec(3.0, .9, 0.9), color=vec(0.70, 0.4, .2) )
+    leaves = cone( size=vec(1.8, 1.8, 1.6), pos=vec(2.5, 0, 0), color=vec(0, .5, .2) )
+    finalTree = compound( [trunk, leaves], pos = startingpos )
+    finalTree.axis = vec(0,1,0)
+
+    return finalTree
+
+
+
+
+
+
+#ground of the game board
+ground = box(size = vec(20, 1, 20),
+             pos = vec(0, -1, 0),
+             color = .9999999999*vec(0, 1, 1))
+             
+hole = box(size = vec(2,1,2), pos = vec(0,-.9,0), color = color.black) #'hole' for the balls to fall into
+
+# 4 walls made up of box objects - ring, balls, and alien all collide with walls
+#
+wallA = box(pos = vec(0, 0, -10),
+            axis = vec(1, 0, 0),
+            size = vec(20, 1, .2),
+            color = color.yellow          
+            )
+wallB = box(pos = vec(-10, 0, 0),
+            axis = vec(0, 0, 1),
+            size = vec(20, 1, .2),
+            color = color.yellow          
+            )
+            
+wallC = box(pos = vec(0, 0, 10),
+            axis = vec(1, 0, 0),
+            size = vec(20, 1, .2),
+            color = color.yellow          
+            )
+wallD = box(pos = vec(10, 0, 0),
+            axis = vec(0, 0, 1),
+            size = vec(20, 1, .2),
+            color = color.yellow          
+            )
+            
+
+
+
+
+
+
+
+
+
+#Creating the ring, aka YOU, the player and starting with vel = 0
+player = ring(pos=vec(-6.5, 0, 5.0), axis=vec(0, 1, 0), radius = 1, thickness = 0.2, color=vec(0,2,0)) #Player object is the RING that you control
+player.vel = vec(0,0,0)
+
+
+
+
+
+#BALL CREATION:
+
+ball = sphere(size = 1.0*vec(1, 1, 1),  # Ball is an object of class sphere
+              color = vec(0.99, 0, 0.0), pos = vec(-2,0,0))  
+ball.vel = vec(0, 0, 0)                
+
+ball1 = sphere(size = 1.0*vec(1,1,1), color = vec(0, .99, 0), pos = vec(4.2, 0, 1.2))
+ball1.vel = vec(0, 0, 0)                
+
+ball2 = sphere(size = 1.0*vec(1,1,1), color = vec(0, 0, .99), pos = vec(.5, 0, 2.5))
+ball2.vel = vec(0, 0, 0)                
+
+ball3 = sphere(size = 1.0*vec(1,1,1), color = vec(.3, 0, .15), pos = vec(-5.3, 0, -6))
+ball3.vel = vec(0, 0, 0)       
+
+L = [ball, ball1, ball2, ball3] #List of balls to make physics calculations easier later
+
+
+
+
+#GHOST CREATION:
+ghost = make_ghost(starting_position = vec(6, 0, -6), starting_vel = vec(1.2, 0, -1))                           # Zero starting velocity for alien2
+                  
+                  
+
+                  
+                  
+
+#TREE CREATION:
+
+trunk = cylinder( size=vec(3.0, .9, 0.9), color=vec(0.70, 0.4, .2) )
+leaves = cone( size=vec(1.8, 1.8, 1.6), pos=vec(2.5, 0, 0), color=vec(0, .5, .2) )
+finalTree = compound( [trunk, leaves] )
+finalTree.axis = vec(0,1,0)
+
+Tree2 = makeTree(vec(3.5,0,5))
+
+Tree3 = makeTree(vec(1.5, 0, -5.0))
+
+Tree4 = makeTree(vec(-3.0, 0, -5.0))
+
+Tree5 = makeTree(vec(-4.0, 0, 3.0))
+
+
+Trees = [finalTree, Tree2, Tree3, Tree4, Tree5]
+
+
+
+
+
+#END OF OBJECT CREATION
+
+
+#START OF ANIMATION/PHYSICS
+
+
+RATE = 30                # The number of times the while loop runs each second
+dt = 1.0/(1.0*RATE)      # The time step each time through the while loop
+scene.autoscale = False  # Avoids changing the view automatically
+scene.forward = vec(0, -3, -2)  # Ask for a bird's-eye view of the scene...
+
+#"event loop" or "animation loop"
+# Each pass through the loop will animate one step in time, dt
+#
+from vpython import *
+start_time = clock()
+
+count = 0
+c = label(text=('Time Placeholder', count), start_face_color=color.red, end_face_color=color.cyan, axis = vec(1,0,0), pos = vec(-4, 2, -10), billboard = False) #STOPWATCH
+
+while True:
+    count += (1/30)
+    c.text = "Try to get all the balls in the hole in less than 60 seconds! >:) TIMER: ",  int(count)
+
+    
+#PHYSICS UPDATES:
+    rate(RATE)  
+    corral_collide(ghost)
+    ghost.pos = ghost.pos + ghost.vel*dt # Update the GHOST's position
+    
+    
+    corral_collide(player) #ring's collisions with the walls
+    player.pos = player.pos + player.vel*dt #Update the player's (your) position/velocity
+    player.vel = player.vel *.98
+    
+    
+    for i in range(len(L)):
+        L[i].pos = L[i].pos + L[i].vel*dt       # Update the ball's position
+        L[i].vel = L[i].vel * 0.98   #friction
+
+
+
+
+#GAME-ENDING SCENARIOS:
+    if mag(player.pos - ghost.pos) < 1.5: #COLLISION WITH MONSTER, LOSING SCENARIO
+        player.vel*= -.000005 #black hole!
+
+        print("GAME OVER! D:")
+        break
+
+    countVis = 0 #WINNING SCENARIO
+    for i in range(len(L)):
+        fall(L[i])# this checks to see how may balls become invisible, if all of them do the game ends because that means you got all the balls in the hole!
+        if L[i].visible == False:
+            countVis +=1
+    if countVis >=4:
+        print("YOU WIN!!!!!!!!!!!!!")
+        break
+
+
+
+
+
+
+
+#COLLISION LOOPS BELOW
+
+
+
+    for i in range(len(Trees)): #RING's collision with all Trees
+        if treeCollide(player, Trees[i]):#handles glitchy stuff when ring collides with tree while jumping
+
+            player.vel.z *= -1
+            player.vel.x *= -1
+        if treeCollide(ghost, Trees[i]): #ghost's collision with trees
+            ghost.vel*= -1
+
+            
+    for i in range(len(L)): #ball collisions with walls
+        corral_collide(L[i])
+        if playerCollide(L[i], ghost):#ball collisions with ghost
+            if L[i].vel == 0:
+                L[i].vel.z += ghost.vel.z
+            elif L[i].vel != 0:
+                L[i].vel *=-1
+
+    
+    
+    for i in range(len(L)): #if two balls collide with each other
+        for j in range(i + 1, len(L)):
+            if collide(L[i], L[j]):
+                # diff = the vector between the two
+                diff = L[i].pos - L[j].pos
+                dtan = rotate(diff, radians(90), vector(0, 1, 0))
+
+                # Get the two velocities
+                vi = L[i].vel
+                vj = L[j].vel
+
+                # Undo the last time step
+                L[i].pos -= L[i].vel * dt
+                L[j].pos -= L[j].vel * dt
+
+                # Find the radial and tangent parts
+                vi_rad = proj(vi, diff)
+                vi_tan = proj(vi, dtan)
+                vj_rad = proj(vj, -diff)
+                vj_tan = proj(vj, dtan)
+
+                # Swap the radials and keep the tangents
+                L[i].vel =  vj_rad + vi_tan
+                L[j].vel =  vi_rad + vj_tan
+
+
+                    
+#the loops below handles my special rule that allows you, the ring, to jump on top of a ball and have that ball seamlessly travel around with you        
+    for i in range(len(L)): ##IF BALL IS INSIDE RING, BALL TAKES ON VEL AND POS OF RING.
+                            ###IF BALL IS OUTSIDE RING, BALL BOUNCES OFF OF RING's EDGE
+        if player.pos.y == 0:#checks if the ring(you) is currently on the ground, aka not jumping
+        
+            if mag(player.pos - L[i].pos) <1.0: #makes the ball travel with you seamlessly
+            
+                    L[i].vel = player.vel 
+                    L[i].pos = player.pos
+            
+            elif playerCollide(player,L[i]):#checks if ball collides with the outside of the ring
+                L[i].vel += 1.0*(player.vel)
+        elif player.pos.y != 0 and (abs(player.pos.x - L[i].pos.x) <1.0 and abs(player.pos.z - L[i].pos.z) <1.0) : #checks if you are currently jumping directly over a ball - if you are, make the ball stay inside the center of the ring so you can deliver it to the goal efficiently!
+            L[i].vel = player.vel 
+            L[i].pos = player.pos
+
+            
+
+    for i in range(len(L)): #handles ball collisions with Trees
+        corral_collide(L[i])
+        if mag(L[i].pos - finalTree.pos) < 1.0:
+            L[i].vel = -1*(L[i].vel) 
+        
+        if mag(L[i].pos - Tree2.pos) < 1.0:
+            L[i].vel = -1*(L[i].vel)  
+        
+        if mag(L[i].pos - Tree3.pos) < 1.0:
+            L[i].vel = -1*(L[i].vel)  
+        
+        if mag(L[i].pos - Tree4.pos) < 1.0:
+            L[i].vel = -1*(L[i].vel) 
+
+
+
+
+
+
+
+
+
+# +++ Start of EVENT-HANDLING section--separate functions for
+#                                keypresses and mouse clicks...
+
+#Many collision functions below...
+
+def playerCollide(player, ball):
+    """Returns true if the ring, aka the player (you) collides with a ball"""
+    if  mag(player.pos - ball.pos)< 1.5:
+        return True
+
+
+def treeCollide(player, Tree):
+    """Returns True if the ring, aka the player, has collided with a Tree object"""
+    if abs(player.pos.x - Tree.pos.x) < 1.5 and abs(player.pos.z - Tree.pos.z) < 1.5:
+        return True
+
+
+                
+        
+def collide(ball, ball2):
+    """Handles collisions between balls, returns True if two balls have collided"""
+    if  mag(ball.pos - ball2.pos)< 1.0:
+        return True
+        
+
+def fall(ball):
+    """checks to see if any of the balls have 'fallen' in the hole in the center!If yes, return True
+        If they have, make the ball invisible and very small, almost 'deleted
+        '
+        Argument: ball, object Sphere
+    """
+    if abs(ball.pos.z - hole.pos.z) < 1.0 and abs(ball.pos.x - hole.pos.x) < 1.0:
+        ball.visible = False 
+        ball.size *= .0000001
+        return True
+
+        
+def corral_collide(player):
+    """Corral collisions!
+       Player must have a .vel field and a .pos field.
+    """ 
+
+
+        
+    if player.pos.z < wallA.pos.z:           # Hit--check for z
+        player.pos.z = wallA.pos.z           # Bring back into bounds
+        player.vel.z *= -1.0                 # Reverse the z velocity
+
+    # If the ball hits wallB
+    if player.pos.x < wallB.pos.x:           # Hit--check for x
+        player.pos.x = wallB.pos.x           # Bring back into bounds
+        player.vel.x *= -1.0                 # Reverse the x velocity
+        
+        
+    if player.pos.z > wallC.pos.z:           # Hit--check for z
+        player.pos.z = wallC.pos.z           # Bring back into bounds
+        player.vel.z *= -1.0                 # Reverse the z velocity
+
+    # If the ball hits wallB
+    if player.pos.x > wallD.pos.x:           # Hit--check for x
+        player.pos.x = wallD.pos.x           # Bring back into bounds
+        player.vel.x *= -1.0  
+        
+    if player.pos.y < 0:
+        player.pos.y = 0
+        player.vel.y = 0.0
+        
+
+
+def keydown_fun(event):
+    """This function is called each time a key is pressed."""
+    key = event.key
+    ri = randint(0, 10)
+    #print("key:", key, ri)      # Prints the key pressed--caps only...
+
+    amount = 0.42 
+    amount2 = 1.2# "Strength" of the keypress's velocity changes
+    if key == 'up' or key in 'wWiI':
+        player.vel = player.vel + vec(0, 0, -amount)
+    elif key == 'left' or key in 'aAjJ':
+        player.vel = player.vel + vec(-amount, 0, 0)
+    elif key == 'down' or key in 'sSkK':
+        player.vel = player.vel + vec(0, 0, amount)
+    elif key == 'right' or key in "dDlL":
+        player.vel = player.vel + vec(amount, 0, 0)
+    elif key in 'rR':
+        player.vel = vec(0, 0, 0) # Reset! via R 
+        player.pos = vec(0, 0, 0)
+    elif key in " ": #handles JUMPING with the space bar!
+        player.pos = player.pos + vec(0,amount2,0)
+        player.vel.y += -50.0*dt # 'gravity' .. not realistic, but it gets the job done :)
+        player.pos = player.pos + player.vel*dt        
+        if player.pos.y < ground.pos.y+(ground.pos.y/2):
+            player.vel.y *= 0.0
+
+
+def click_fun(event):
+    """This function is called each time the mouse is clicked."""
+    print("event is", event.event, event.which)
+
+#End of EVENT-HANDLING section
+
+
+
+#Other functions...
+
+def choice(L):
+    """Implements Python's choice using the random() function."""
+    LEN = len(L)                        # Get the length
+    randomindex = int(LEN*random())     # Get a random index
+    return L[randomindex]               # Return that element
+
+def randint(low, hi):
+    """Implements Python's randint using the random() function.
+       returns an int from low to hi _inclusive_ (so, it's not 100% Pythonic)
+    """
+    if hi < low:
+        low, hi = hi, low               # Swap if out of order!
+    LEN = int(hi) - int(low) + 1.       # Get the span and add 1
+    randvalue = LEN*random() + int(low) # Get a random value
+    return int(randvalue)               # Return the integer part of it
+
+def randcolor():
+    """Returns a vector of (r, g, b) random from 0.0 to 1.0."""
+    r = random()           # This is different than Python's random.uniform
+    g = random()           # ..it automatically uses 0.0 to 1.0
+    b = random()
+    return vec(r, g, b)                 # A color is a three-element vector
